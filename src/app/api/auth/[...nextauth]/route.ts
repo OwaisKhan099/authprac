@@ -4,6 +4,7 @@ import User_ from "../../../../../models/users";
 import bcrypt from "bcrypt";
 import NextAuth from "next-auth";
 import { NextAuthOptions } from "next-auth";
+import { use } from "react";
 
 export const authOptions:NextAuthOptions  = {
 providers: [
@@ -21,31 +22,39 @@ providers: [
       password: { label: "Password", type: "password" }
     },
 
-    
-
-    async authorize(credentials) {
+    async authorize(credentials:any) {
       // Add logic here to look up the user from the credentials supplied
       const user = await { id: "1", name: 'admin', email: 'admin@example.com' };
-      var username_ = await credentials?.email;
-      var PW = await credentials?.password;
-      console.log(`These arer credentials, teken from login page:   ${username_} , ${PW}`)
+      const username_ = await credentials?.email;
+      user.email = await credentials?.email;
+      
 
-      const salt = await bcrypt.genSaltSync(10);
-      const hash = await bcrypt.hashSync(PW!,salt);
+      //const {Username} = await credentials.json();
+      console.log("trying")
+      const PW = await credentials?.password;
+      console.log(`These arer credentials, teken from login page:   ${user.email} , ${PW} `, typeof user.email);
+      
       try {
         await ConnectMongoDb();
         console.log("connected");
-        //const user = await User_.findOne({username_});
-        const user = await User_.findOne({username_}).select("_id")
-        const pw = await User_.findOne({username_}).select("password")
-        console.log(`${user._id} , ${pw.password}`)
-        if(!username_){
+        // const id = await User_.findOne({email:username_}).select("_id")
+        const userFound = await User_.findOne({email:user.email})
+        const id = await User_.findOne({email:user.email}).select("_id")
+        const name = await  User_.findOne({email:user.email}).select("name")
+        const passMatch = await bcrypt.compare(PW, userFound.password)
+        user.name = name.name;
+
+        console.log(passMatch, typeof id, id, userFound._id, userFound.name, userFound.password)
+        if(!id){
           return null
         }
-        const PassWordMatch = await bcrypt.compare(hash, user.password)
-        console.log(`These are PWWWW:   ${hash}_, ${user.password}`)
-      } catch (error) {
+
+        if(!passMatch){
+          return null
+        }
         
+      } catch (error) {
+        console.log(error)
       }
 
     return user
@@ -58,11 +67,9 @@ session:{
 },
 secret:process.env.NEXTAUTH_SECRET,
 pages:{
-        signIn:"/"
+        signIn:"/",
 },
 };
-
-
 
 const handler = NextAuth(authOptions)
 export {handler as GET, handler as POST}

@@ -12,6 +12,7 @@ export async function POST(req:any){
         //finding it from the DB using the defined model
         const user = await User_.findOne({email}).select("_id")
         const pw = await User_.findOne({email}).select("password")
+        console.log(email, typeof email)
         console.log(`User from UserExists: ${user._id} ${typeof user._id}`)
         console.log(`User from UserExists: ${pw.password} ${typeof pw.password}`)
 
